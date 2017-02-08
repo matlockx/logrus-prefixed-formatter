@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -54,9 +53,9 @@ type TextFormatter struct {
 	// Its default value is zero, which means no padding will be applied for msg.
 	SpacePadding int
 
-	// Whether the logger's out is to a terminal
-	isTerminal   bool
-	terminalOnce sync.Once
+	// Loggers out is terminal or not
+	isTerminal bool
+	isTermalDetermined bool
 }
 
 func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
@@ -75,11 +74,10 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	prefixFieldClashes(entry.Data)
 
-	f.terminalOnce.Do(func() {
-		if entry.Logger != nil {
-			f.isTerminal = logrus.IsTerminal(entry.Logger.Out)
-		}
-	})
+	if !f.isTermalDetermined {
+		f.isTerminal = logrus.IsTerminal(entry.Logger.Out)
+		f.isTermalDetermined = true
+	}
 
 	isColored := (f.ForceColors || f.isTerminal) && !f.DisableColors
 
